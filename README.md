@@ -9,44 +9,22 @@
 
 ---
 
-# Next major version
-
-Me and [Nerix](https://github.com/Nerixyz) are ready to announce the next 2.x.x version of this library.
-It has extended feature list.
-It's a big release.
-We have significantly expanded the functionality and capabilities.
-The library turned into a monorepository and now it's a set of libraries, connected in an ecosystem.
-It consists of
-
-- Android API
-- Web API
-- FBNS, Realtime
-
-We've done some work on design decisions.
-We simplified the state management process.
-Now you can easily make a snapshot of account state, save it in a persistent storage and then restore a 1-to-1 copy with just 1 function call.
-With new realtime features you can listen for new direct messages, notifications and any other events.
-
-The new version is hosted in private repository. Access is paid.
-Members get **basic** support for installation, configuration, and usage.
-We also will try to react on your feature requests.
-
-You can contact me in [telegram](https://t.me/bowzee) or [email](mailto:dilame.bowzee@gmail.com) for details.
-
 # Table of Contents
 
+- [NodeJS Instagram private API client](#nodejs-instagram-private-api-client)
+- [Table of Contents](#table-of-contents)
 - [Install](#install)
 - [Support us](#support-us)
 - [Examples](#examples)
-- [Basic Concepts](#basic-concepts)
+- [Basic concepts](#basic-concepts)
   - [Feeds](#feeds)
   - [Repositories](#repositories)
   - [Services](#services)
+- [Debugging](#debugging) - [Node](#node) - [Browser](#browser)
 - [Contribution](#contribution)
-- [Useful Links](#useful-links)
-  - [Special Thanks](#special-thanks)
-  - [Thanks to Contributors](#thanks-to-contributors)
-  - [End User License Agreement (EULA)](#end-user-license-agreement-eula)
+- [Useful links](#useful-links)
+  - [Special thanks](#special-thanks)
+  - [Thanks to contributors](#thanks-to-contributors)
 
 # Install
 
