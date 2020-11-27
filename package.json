@@ -1,7 +1,7 @@
 {
-  "name": "instagram-private-api",
+  "name": "@ahmedwalid05/instagram-private-api",
   "description": "Instagram private API wrapper for full access to instagram",
-  "version": "1.43.3",
+  "version": "1.43.4",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -12,14 +12,14 @@
     "node": ">=8.0.0"
   },
   "bugs": {
-    "url": "https://github.com/dilame/instagram-private-api/issues",
-    "email": "dilame.nickolson@gmail.com"
+    "url": "https://github.com/ahmedwalid05/instagram-private-api/issues",
+    "email": "ahmedwalid05@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/dilame/instagram-private-api.git"
+    "url": "https://github.com/ahmedwalid05/instagram-private-api.git"
   },
-  "homepage": "https://github.com/dilame/instagram-private-api",
+  "homepage": "https://github.com/ahmedwalid05/instagram-private-api",
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -76,5 +76,8 @@
     "typedoc": "^0.15.0",
     "typedoc-plugin-markdown": "^2.0.11",
     "typescript": "^3.7.2"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/@ahmedwalid05"
   }
 }
