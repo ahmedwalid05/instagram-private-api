@@ -77,7 +77,11 @@ export class Request {
     const response = await this.faultTolerantRequest(options);
     this.updateState(response);
     process.nextTick(() => this.end$.next());
-    if (response.body.status === 'ok' || (onlyCheckHttpStatus && response.statusCode === 200)) {
+    if (
+      response.body.status === 'ok' ||
+      response.body.nonce_valid == false ||
+      (onlyCheckHttpStatus && response.statusCode === 200)
+    ) {
       return response;
     }
     const error = this.handleResponseError(response);
@@ -169,6 +173,10 @@ export class Request {
     if (json.error_type === 'inactive user') {
       return new IgInactiveUserError(response);
     }
+    if (json.error_type === 'invalid_nonce') {
+      return new IgResponseError(response);
+    }
+
     return new IgResponseError(response);
   }
 

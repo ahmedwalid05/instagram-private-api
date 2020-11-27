@@ -1,4 +1,6 @@
 export * from './account.repository.current-user.response';
+export * from './account.repository.create.response';
+export * from './account.repository.create.error.response';
 export * from './account.repository.login.error.response';
 export * from './account.repository.login.response';
 export * from './account-followers.feed.response';

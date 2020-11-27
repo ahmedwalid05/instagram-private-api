@@ -1,5 +1,7 @@
 import { Repository } from '../core/repository';
 import {
+  AccountRepositoryCreateResponsePhoneNumber,
+  AccountRepositoryCreateResponsePhoneNumberSendSms,
   AccountRepositoryCurrentUserResponseRootObject,
   AccountRepositoryLoginErrorResponse,
   AccountRepositoryLoginResponseLogged_in_user,
@@ -12,6 +14,7 @@ import {
   IgLoginInvalidUserError,
   IgLoginTwoFactorRequiredError,
   IgResponseError,
+  IgParameterError,
 } from '../errors';
 import { IgResponse, AccountEditProfileOptions, AccountTwoFactorLoginOptions } from '../types';
 import { defaultsDeep } from 'lodash';
@@ -22,11 +25,12 @@ import * as crypto from 'crypto';
 
 export class AccountRepository extends Repository {
   private static accountDebug = debug('ig:account');
+
   public async login(username: string, password: string): Promise<AccountRepositoryLoginResponseLogged_in_user> {
     if (!this.client.state.passwordEncryptionPubKey) {
       await this.client.qe.syncLoginExperiments();
     }
-    const {encrypted, time} = this.encryptPassword(password);
+    const { encrypted, time } = this.encryptPassword(password);
     const response = await Bluebird.try(() =>
       this.client.request.send<AccountRepositoryLoginResponseRootObject>({
         method: 'POST',
@@ -77,14 +81,17 @@ export class AccountRepository extends Repository {
     return `2${sum}`;
   }
 
-  public encryptPassword(password: string): { time: string, encrypted: string } {
+  public encryptPassword(password: string): { time: string; encrypted: string } {
     const randKey = crypto.randomBytes(32);
     const iv = crypto.randomBytes(12);
-    const rsaEncrypted = crypto.publicEncrypt({
-      key: Buffer.from(this.client.state.passwordEncryptionPubKey, 'base64').toString(),
-      // @ts-ignore
-      padding: crypto.constants.RSA_PKCS1_PADDING,
-    }, randKey);
+    const rsaEncrypted = crypto.publicEncrypt(
+      {
+        key: Buffer.from(this.client.state.passwordEncryptionPubKey, 'base64').toString(),
+        // @ts-ignore
+        padding: crypto.constants.RSA_PKCS1_PADDING,
+      },
+      randKey,
+    );
     const cipher = crypto.createCipheriv('aes-256-gcm', randKey, iv);
     const time = Math.floor(Date.now() / 1000).toString();
     cipher.setAAD(Buffer.from(time));
@@ -98,8 +105,10 @@ export class AccountRepository extends Repository {
         Buffer.from([1, this.client.state.passwordEncryptionKeyId]),
         iv,
         sizeBuffer,
-        rsaEncrypted, authTag, aesEncrypted])
-        .toString('base64'),
+        rsaEncrypted,
+        authTag,
+        aesEncrypted,
+      ]).toString('base64'),
     };
   }
 
@@ -168,6 +177,127 @@ export class AccountRepository extends Repository {
           AccountRepository.accountDebug('Signup failed');
           throw new IgSignupBlockError(error.response as IgResponse<SpamResponse>);
         }
+        default: {
+          throw error;
+        }
+      }
+    });
+    return body;
+  }
+  async createPhoneNumber({
+    phone_number,
+    verification_code,
+    username,
+    password,
+    first_name,
+    gdpr_required,
+  }): Promise<AccountRepositoryLoginResponseLogged_in_user> {
+    const { body } = await Bluebird.try(() =>
+      this.client.request.send({
+        method: 'POST',
+        url: '/api/v1/accounts/create_validated/',
+        form: this.client.request.sign({
+          allow_contacts_sync: true,
+          verification_code,
+          sn_result: 'API_ERROR:+null',
+          phone_id: this.client.state.phoneId,
+          phone_number,
+          _csrftoken: this.client.state.cookieCsrfToken,
+          username,
+          first_name,
+          adid: this.client.state.uuid,
+          guid: this.client.state.uuid,
+          device_id: this.client.state.deviceId,
+          sn_nonce: '',
+          force_sign_up_code: '',
+          waterfall_id: this.client.state.uuid,
+          qs_stamp: '',
+          password,
+          has_sms_consent: true,
+          ...(gdpr_required && { gdpr_required: '[0,2,0,null]' }),
+        }),
+      }),
+    ).catch(IgResponseError, error => {
+      switch (error.response.body.error_type) {
+        case 'signup_block': {
+          AccountRepository.accountDebug('Signup failed');
+          throw new IgSignupBlockError(error.response as IgResponse<SpamResponse>);
+        }
+        default: {
+          throw error;
+        }
+      }
+    });
+    return body.created_user;
+  }
+  private async checkPhoneNumber(phone_number: string) {
+    const { body } = await Bluebird.try(() =>
+      this.client.request.send({
+        method: 'POST',
+        url: '/api/v1/accounts/check_phone_number/',
+        form: this.client.request.sign({
+          phone_number,
+          login_nonces: '[]',
+          device_id: this.client.state.deviceId,
+          _csrftoken: this.client.state.cookieCsrfToken,
+        }),
+      }),
+    ).catch(IgResponseError, error => {
+      switch (error.response.body.error_type) {
+        case 'missing_parameters': {
+          throw new IgParameterError(error.response as IgResponse<StatusResponse>);
+        }
+        default: {
+          throw error;
+        }
+      }
+    });
+    return body.status == 'ok';
+  }
+  public async sendSignUpSmsCode(phoneNumber: string): Promise<AccountRepositoryCreateResponsePhoneNumberSendSms> {
+    await this.checkPhoneNumber(phoneNumber);
+
+    const { body } = await Bluebird.try(() =>
+      this.client.request.send({
+        method: 'POST',
+        url: '/api/v1/accounts/send_signup_sms_code/',
+        form: this.client.request.sign({
+          phone_id: this.client.state.phoneId,
+          phone_number: phoneNumber,
+          _csrftoken: this.client.state.cookieCsrfToken,
+          guid: this.client.state.uuid,
+          device_id: this.client.state.deviceId,
+          waterfall_id: this.client.state.uuid,
+        }),
+      }),
+    ).catch(IgResponseError, error => {
+      switch (error.response.body.error_type) {
+        default: {
+          throw error;
+        }
+      }
+    });
+    return body;
+  }
+  public async verifySignUpSmsCode(
+    phoneNumber: string,
+    verificationCode: string,
+  ): Promise<AccountRepositoryCreateResponsePhoneNumber> {
+    const { body } = await Bluebird.try(() =>
+      this.client.request.send({
+        method: 'POST',
+        url: '/api/v1/accounts/validate_signup_sms_code/',
+        form: this.client.request.sign({
+          verification_code: verificationCode,
+          phone_number: phoneNumber,
+          _csrftoken: this.client.state.cookieCsrfToken,
+          guid: this.client.state.uuid,
+          device_id: this.client.state.deviceId,
+          waterfall_id: this.client.state.uuid,
+        }),
+      }),
+    ).catch(IgResponseError, error => {
+      switch (error.response.body.error_type) {
         default: {
           throw error;
         }
