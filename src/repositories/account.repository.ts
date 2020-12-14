@@ -325,7 +325,7 @@ export class AccountRepository extends Repository {
         form: this.client.request.sign({
           current_screen_key: 'age_consent_two_button',
           phone_id: this.client.state.phoneId,
-          gdpr_s: '',
+          gdpr_s: '[0,0,0,null]',
           updates: '{"age_consent_state":"2"}',
           _csrftoken: this.client.state.cookieCsrfToken,
           guid: this.client.state.uuid,
