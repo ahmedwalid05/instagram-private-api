@@ -230,6 +230,7 @@ export class AccountRepository extends Repository {
     });
     return body.created_user;
   }
+
   private async checkPhoneNumber(phone_number: string) {
     const { body } = await Bluebird.try(() =>
       this.client.request.send({
@@ -278,6 +279,66 @@ export class AccountRepository extends Repository {
       }
     });
     return body;
+  }
+  public async acceptConsentRequired(phone) {
+    await Bluebird.try(() =>
+      this.client.request.send({
+        method: 'POST',
+        url: '/api/v1/consent/new_user_flow_begins/',
+        form: this.client.request.sign({
+          _csrftoken: this.client.state.cookieCsrfToken,
+          phone_id: this.client.state.phoneId,
+        }),
+      }),
+    ).catch(IgResponseError, error => {
+      switch (error.response.body.error_type) {
+        default: {
+          throw error;
+        }
+      }
+    });
+
+    await Bluebird.try(() =>
+      this.client.request.send({
+        method: 'POST',
+        url: '/api/v1/consent/new_user_flow/',
+        form: this.client.request.sign({
+          phone_id: this.client.state.phoneId,
+          gdpr_s: '',
+          _csrftoken: this.client.state.cookieCsrfToken,
+          guid: this.client.state.uuid,
+          device_id: this.client.state.deviceId,
+          phone,
+        }),
+      }),
+    ).catch(IgResponseError, error => {
+      switch (error.response.body.error_type) {
+        default: {
+          throw error;
+        }
+      }
+    });
+    await Bluebird.try(() =>
+      this.client.request.send({
+        method: 'POST',
+        url: '/api/v1/consent/new_user_flow/',
+        form: this.client.request.sign({
+          current_screen_key: 'age_consent_two_button',
+          phone_id: this.client.state.phoneId,
+          gdpr_s: '',
+          updates: JSON.stringify({ age_consent_state: 2 }),
+          _csrftoken: this.client.state.cookieCsrfToken,
+          guid: this.client.state.uuid,
+          device_id: this.client.state.deviceId,
+        }),
+      }),
+    ).catch(IgResponseError, error => {
+      switch (error.response.body.error_type) {
+        default: {
+          throw error;
+        }
+      }
+    });
   }
   public async verifySignUpSmsCode(
     phoneNumber: string,
