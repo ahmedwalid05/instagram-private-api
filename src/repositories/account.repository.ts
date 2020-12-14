@@ -326,7 +326,7 @@ export class AccountRepository extends Repository {
           current_screen_key: 'age_consent_two_button',
           phone_id: this.client.state.phoneId,
           gdpr_s: '',
-          updates: JSON.stringify({ age_consent_state: 2 }),
+          updates: '{"age_consent_state":"2"}',
           _csrftoken: this.client.state.cookieCsrfToken,
           guid: this.client.state.uuid,
           device_id: this.client.state.deviceId,
